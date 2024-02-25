@@ -18,16 +18,14 @@ static struct bt_conn *current_conn;
 
 // Определяем значение UUID
 #define BT_UUID_REMOTE_SERV_VAL \
-	BT_UUID_128_ENCODE(0xe9ea0001, 0xe19b, 0x482d, 0x9293, 0xc7907585fc48)
+    BT_UUID_128_ENCODE(0xe9ea0001, 0xe19b, 0x482d, 0x9293, 0xc7907585fc48)
 #define BT_UUID_REMOTE_MESSAGE_CHRC_VAL \
-	BT_UUID_128_ENCODE(0xe9ea0003, 0xe19b, 0x482d, 0x9293, 0xc7907585fc48)
+    BT_UUID_128_ENCODE(0xe9ea0003, 0xe19b, 0x482d, 0x9293, 0xc7907585fc48)
 
-#define BT_UUID_LBS_MYSENSOR_VAL \
-	BT_UUID_128_ENCODE(0x00001526, 0x1212, 0xefde, 0x1523, 0x785feabcd123)
+
 
 #define BT_UUID_REMOTE_SERVICE          BT_UUID_DECLARE_128(BT_UUID_REMOTE_SERV_VAL)
 #define BT_UUID_REMOTE_MESSAGE_CHRC     BT_UUID_DECLARE_128(BT_UUID_REMOTE_MESSAGE_CHRC_VAL)
-#define BT_UUID_LBS_MYSENSOR       BT_UUID_DECLARE_128(BT_UUID_LBS_MYSENSOR_VAL)
 
 
 static bool notify_mysensor_enabled;
@@ -51,16 +49,16 @@ static struct device *flash_dev = DEVICE_DT_GET(DT_NODELABEL(flash_controller));
 
 typedef struct inf
 {
-	uint8_t state;
+    uint8_t state;
 } inf;
 static inf my_info;
 
 static ssize_t on_write(struct bt_conn *conn, const struct bt_gatt_attr *attr, const void *buf, uint16_t len, uint16_t offset, uint8_t flags);
 
 static void mylbsbc_ccc_mysensor_cfg_changed(const struct bt_gatt_attr *attr,
-				  uint16_t value)
+                  uint16_t value)
 {
-	notify_mysensor_enabled = (value == BT_GATT_CCC_NOTIFY);
+    notify_mysensor_enabled = (value == BT_GATT_CCC_NOTIFY);
 }
 //Макрос
 BT_GATT_SERVICE_DEFINE(remote_srv,
@@ -68,15 +66,7 @@ BT_GATT_PRIMARY_SERVICE(BT_UUID_REMOTE_SERVICE),
     BT_GATT_CHARACTERISTIC(BT_UUID_REMOTE_MESSAGE_CHRC,
                     BT_GATT_CHRC_WRITE_WITHOUT_RESP,
                     BT_GATT_PERM_READ | BT_GATT_PERM_WRITE,
-                     NULL, on_write, NULL),
-
-	BT_GATT_CHARACTERISTIC(BT_UUID_LBS_MYSENSOR,
-			       BT_GATT_CHRC_NOTIFY,
-			       BT_GATT_PERM_NONE, NULL, NULL,
-			       NULL),
-
-	BT_GATT_CCC(mylbsbc_ccc_mysensor_cfg_changed,
-		    BT_GATT_PERM_READ | BT_GATT_PERM_WRITE),					
+                     NULL, on_write, NULL),                 
 );
 
 static struct bt_conn_cb bluetooth_callbacks;
@@ -103,39 +93,38 @@ void save_led_state(inf my_info)
 // Вызов функции запииси в flash память состояние светодиода
 void write_info(int a)
 {
-	my_info.state = a;
-	save_led_state(my_info);
+    my_info.state = a;
+    save_led_state(my_info);
 }
 
 // Получает и обрабатывает данные, которые были переданы 
 static ssize_t on_write(struct bt_conn *conn,
-			  const struct bt_gatt_attr *attr,
-			  const void *buf,
-			  uint16_t len,
-			  uint16_t offset,
-			  uint8_t flags)
+              const struct bt_gatt_attr *attr,
+              const void *buf,
+              uint16_t len,
+              uint16_t offset,
+              uint8_t flags)
 {
 
 
-	LOG_INF("Received data as text: %.*s", len, (char *)buf);
-	if (strncmp((char *)buf, "start", len) == 0) {
+    LOG_INF("Received data as text: %.*s", len, (char *)buf);
+    if (strncmp((char *)buf, "start", len) == 0) {
         // Включаем светодиод
         gpio_pin_set_dt(&led0, 1);
-		write_info(1);
+        write_info(1);
 
     } else if (strncmp((char *)buf, "stop", len) == 0) {
 
         // Выключаем светодиод
         gpio_pin_set_dt(&led0, 0);
-		write_info(0);
+        write_info(0);
 
     }
-	if (remote_callbacks.data_received) {
-		remote_callbacks.data_received(conn, buf, len);
+    if (remote_callbacks.data_received) {
+        remote_callbacks.data_received(conn, buf, len);
     }
-	return len;
+    return len;
 }
-
 // Функция вызывается при подключении устройства 
 void on_connected(struct bt_conn *conn, uint8_t err)
 {
@@ -197,15 +186,6 @@ int bluetooth_init(struct bt_conn_cb *bt_cb, struct bt_remote_service_cb *remote
     return err;
 }
 
-
-int my_lbs_send_sensor_notify(uint32_t sensor_value)
-{
-	if (!notify_mysensor_enabled) {
-		return -EACCES;
-	}
-
-	return bt_gatt_notify(NULL, &remote_srv.attrs[7], &sensor_value, sizeof(sensor_value));
-}
 
 // Проверка инициализации светодиода
 void check_device_led()
